@@ -65,8 +65,9 @@ public class IndexController {
 	}
 	
 	@RequestMapping("/validateServiceTicket")
-	public ResponseEntity<String> validateServiceTicket(String st, HttpServletRequest req) {
+	public ResponseEntity<String> validateServiceTicket(String st, String system, HttpServletRequest req) {
 		log.info("## validateServiceTicket " + st);
+		log.info(system);
 		
 		boolean result = ServiceTicketUtil.validate(st);
 		

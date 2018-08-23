@@ -104,7 +104,9 @@ public class JwtLoginFilter implements Filter  {
 			
 			AjaxData ajaxData;
 			String token = req.getHeader("ssoToken");
+			String gssoc = req.getParameter("gssoc");
 			log.info("## " + token);
+			log.info("全局 SSO Cookie");
 			// 通过验证 true
 			if (StringUtils.isEmpty(token)) {
 				log.info("## token为空");
