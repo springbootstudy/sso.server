@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -23,7 +24,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.ctsi.springboot.server.entity.AjaxData;
 import com.ctsi.springboot.server.util.Constants;
+import com.ctsi.springboot.server.util.JacksonUtil;
 import com.ctsi.springboot.server.util.JwtUtil;
 
 @Component
@@ -73,7 +76,7 @@ public class JwtLoginFilter implements Filter  {
 			log.info("## 处理预检");
 			rep.setStatus(HttpStatus.NO_CONTENT.value());
 			//当判定为预检请求后，设定允许请求的头部类型
-			rep.setHeader("Access-Control-Allow-Headers", "Content-Type, x-requested-with, ssoToken"); 
+			rep.setHeader("Access-Control-Allow-Headers", "Content-Type, x-requested-with, token, ssoToken"); 
 			//当判定为预检请求后，设定允许请求的方法
 			rep.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS, DELETE");
 			// 单位秒
@@ -98,8 +101,9 @@ public class JwtLoginFilter implements Filter  {
 		else { // 不在过滤url之外
 			response.setContentType("application/json; charset=utf-8");
 			
-//			AjaxData ajaxData;
+			AjaxData ajaxData;
 			String queryAddress = req.getParameter("qa");
+			log.info("原地址 " + queryAddress);
 			// 获取全局登录标识
 			String gssoc = req.getParameter("gssoc");
 			log.info("全局 SSO Cookie " + gssoc);
@@ -109,18 +113,17 @@ public class JwtLoginFilter implements Filter  {
 			 * 不为空则需要检查是否有效，有效则证明已经登录，直接返回 Service Ticket，无效则跳转登录页面
 			 */
 			if (StringUtils.isEmpty(gssoc)) {
-				log.info("## " + queryAddress);
 				log.info("## 跳转 sso 登录");
 //				req.getRequestDispatcher("http://www.baidu.com").forward(request, response);
-				rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
+//				rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
 				
-//				try ( Writer writer = response.getWriter() ) {
-//					ajaxData = new AjaxData(1000, "请登录系统");
-//					writer.write(JacksonUtil.bean2Json(ajaxData));
-//				}
-//				catch (Exception ex) {
-//					ex.printStackTrace();
-//				}
+				try ( Writer writer = response.getWriter() ) {
+					ajaxData = new AjaxData(1000, "请从 SSO Server 登录系统");
+					writer.write(JacksonUtil.bean2Json(ajaxData));
+				}
+				catch (Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 			else {
 				try {
@@ -140,27 +143,27 @@ public class JwtLoginFilter implements Filter  {
 				catch (ExpiredJwtException ex) {
 					log.info("## GSSOC 过期");
 					ex.printStackTrace();
-					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
-//					try ( Writer writer = response.getWriter() ) {
-//						ajaxData = new AjaxData(1001, "GSSOC 过期，请重新获取");
-//						writer.write(JacksonUtil.bean2Json(ajaxData));
-//					}
-//					catch (Exception e) {
-//						e.printStackTrace();
-//					}
+//					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
+					try ( Writer writer = response.getWriter() ) {
+						ajaxData = new AjaxData(1001, "GSSOC 过期，请重新获取");
+						writer.write(JacksonUtil.bean2Json(ajaxData));
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 				catch (Exception ex) {
 					log.info("## 解析 GSSOC 出错");
 					ex.printStackTrace();
-					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
+//					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
 					
-//					try ( Writer writer = response.getWriter() ) {
-//						ajaxData = new AjaxData(1002, "GSSOC 不正确");
-//						writer.write(JacksonUtil.bean2Json(ajaxData));
-//					}
-//					catch (Exception e) {
-//						e.printStackTrace();
-//					}
+					try ( Writer writer = response.getWriter() ) {
+						ajaxData = new AjaxData(1002, "GSSOC 不正确");
+						writer.write(JacksonUtil.bean2Json(ajaxData));
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}

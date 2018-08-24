@@ -37,7 +37,7 @@ public class FilterConfig {
 		
 		// 不需要验证的 url
 		Map<String, String> initParameters = new HashMap<>();
-		initParameters.put("login", "/login");
+//		initParameters.put("login", "/login");
 		initParameters.put("validateServiceTicket", "/validateServiceTicket");
 		initParameters.put("logine", "/logine");
 		reg.setInitParameters(initParameters);
