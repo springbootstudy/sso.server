@@ -140,30 +140,16 @@ public class IndexController {
 		return new ResponseEntity<Object>(map, HttpStatus.OK);
 	}
 	
-//	@RequestMapping("/login")
-//	public Object login(String username, String passwd) {
-//		log.info("## get login " + username + ", " + passwd);
-//		
-//		Map<String, Object> map = new HashMap<String, Object>();
-//		
-//		// 通过认证的账号
-//		if ("a".equals(username) && "b".equals(passwd)) {
-//			log.info("## token flag " + filterConfig.isFilterToken());
-//			if (filterConfig.isFilterToken()) {
-//				Map<String, Object> claims = new HashMap<>();
-//				String token = JwtUtil.generateToken(claims);
-////				logger.info("## " + token);
-//				
-//				map.put("token", token);
-//			}
-//		}
-//		// 不通过
-//		else {
-//			map.put("error", HttpStatus.UNAUTHORIZED);
-//		}
-//		
-//		return map;
-//	}
+	@RequestMapping("/login")
+	public Object login() {
+		log.info("CAS 模拟登录接口");
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		String st = ServiceTicketUtil.getServiceTicket();
+		map.put("st", st);
+		
+		return map;
+	}
 	
 	@RequestMapping(value = "/refreshToken")
 	public ResponseEntity<Object> refreshToken(HttpServletRequest req) {

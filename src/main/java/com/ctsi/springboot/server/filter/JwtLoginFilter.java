@@ -4,9 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -25,9 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.ctsi.springboot.server.entity.AjaxData;
 import com.ctsi.springboot.server.util.Constants;
-import com.ctsi.springboot.server.util.JacksonUtil;
 import com.ctsi.springboot.server.util.JwtUtil;
 
 @Component
@@ -102,19 +98,22 @@ public class JwtLoginFilter implements Filter  {
 		else { // 不在过滤url之外
 			response.setContentType("application/json; charset=utf-8");
 			
-			AjaxData ajaxData;
-			String token = req.getHeader("ssoToken");
+//			AjaxData ajaxData;
+			String queryAddress = req.getParameter("qa");
+			// 获取全局登录标识
 			String gssoc = req.getParameter("gssoc");
-			log.info("## " + token);
-			log.info("全局 SSO Cookie");
-			// 通过验证 true
-			if (StringUtils.isEmpty(token)) {
-				log.info("## token为空");
-				String queryAddress = req.getParameter("qa");
+			log.info("全局 SSO Cookie " + gssoc);
+			/*
+			 * 全局登录标识
+			 * 为空则说明未登录，跳转到 SSO Server 的登录页面
+			 * 不为空则需要检查是否有效，有效则证明已经登录，直接返回 Service Ticket，无效则跳转登录页面
+			 */
+			if (StringUtils.isEmpty(gssoc)) {
 				log.info("## " + queryAddress);
 				log.info("## 跳转 sso 登录");
 //				req.getRequestDispatcher("http://www.baidu.com").forward(request, response);
 				rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
+				
 //				try ( Writer writer = response.getWriter() ) {
 //					ajaxData = new AjaxData(1000, "请登录系统");
 //					writer.write(JacksonUtil.bean2Json(ajaxData));
@@ -123,61 +122,45 @@ public class JwtLoginFilter implements Filter  {
 //					ex.printStackTrace();
 //				}
 			}
-			// 否则 false
 			else {
 				try {
 //					JwtUtil.validateToken(token);
-					Claims claims = JwtUtil.getClaimsFromToken(token);
+					Claims claims = JwtUtil.getClaimsFromToken(gssoc);
 					log.info("## " + claims.get("username") + ", " + claims.get("userid") + ", " + claims.get(Constants.TOKEN_DATA));
-					Date date = claims.getExpiration();
-					long tokenTime = date.getTime();
-					log.info("## 获取Token的时间 " + tokenTime + ", " + new Date(tokenTime));
-					long curTime = System.currentTimeMillis();
-					log.info("## 当前时间 " + curTime + ", " + new Date(curTime));
+//					Date date = claims.getExpiration();
+//					long tokenTime = date.getTime();
+//					log.info("## 获取 GSSOC 的时间 " + tokenTime + " => " + new Date(tokenTime));
+//					long curTime = System.currentTimeMillis();
+//					log.info("## 当前时间 " + curTime + " => " + new Date(curTime));
 					
-					if (curTime > tokenTime) {
-						try ( Writer writer = response.getWriter() ) {
-//							writer.write("token 过期，请重新获取");
-							ajaxData = new AjaxData(1001, "token 过期，请重新获取");
-							writer.write(JacksonUtil.bean2Json(ajaxData));
-						}
-						catch (Exception e) {
-							e.printStackTrace();
-						}
-						
-					}
-					else {
-						log.info("## 通过验证");
-						req.setAttribute("tokenData", claims);
-						chain.doFilter(request, response);
-					}
+					log.info("## 通过验证");
+					req.setAttribute("tokenData", claims);
+					chain.doFilter(request, response);
 				}
 				catch (ExpiredJwtException ex) {
-					log.info("## token 过期");
+					log.info("## GSSOC 过期");
 					ex.printStackTrace();
-					try ( Writer writer = response.getWriter() ) {
-//						writer.write("token 过期，请重新获取");
-						ajaxData = new AjaxData(1001, "token 过期，请重新获取");
-						writer.write(JacksonUtil.bean2Json(ajaxData));
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-					
+					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
+//					try ( Writer writer = response.getWriter() ) {
+//						ajaxData = new AjaxData(1001, "GSSOC 过期，请重新获取");
+//						writer.write(JacksonUtil.bean2Json(ajaxData));
+//					}
+//					catch (Exception e) {
+//						e.printStackTrace();
+//					}
 				}
 				catch (Exception ex) {
+					log.info("## 解析 GSSOC 出错");
 					ex.printStackTrace();
-					log.info("## 解析token出错");
+					rep.sendRedirect("http://sso.sevenzero.org:8088/#/login?qa=" + queryAddress);
 					
-					try ( Writer writer = response.getWriter() ) {
-//						writer.write("token 不正确");
-						ajaxData = new AjaxData(1002, "token 不正确");
-						writer.write(JacksonUtil.bean2Json(ajaxData));
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-					
+//					try ( Writer writer = response.getWriter() ) {
+//						ajaxData = new AjaxData(1002, "GSSOC 不正确");
+//						writer.write(JacksonUtil.bean2Json(ajaxData));
+//					}
+//					catch (Exception e) {
+//						e.printStackTrace();
+//					}
 				}
 			}
 		}
@@ -188,5 +171,4 @@ public class JwtLoginFilter implements Filter  {
 		
 	}
 	
-
 }
